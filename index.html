@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Human Resource — Document Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#121212; --panel:#171717; --card:#1a1a1a; --card-hover:#212120; --border:#2a2a27;
+    --hero-bg:#F6F4EE; --hero-text:#141311;
+    --text:#EAE8E1; --text-dim:#9A988F; --text-faint:#6E6C64;
+    --accent:#C1432B; --accent-dim:#8C3120;
+    --serif: 'Fraunces', Georgia, serif; --sans: 'IBM Plex Sans', -apple-system, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); -webkit-font-smoothing:antialiased;}
+  .hidden{display:none !important;}
+
+  /* ---------- login ---------- */
+  #login-screen, #denied-screen{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;}
+  .login-card{background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:34px 30px; width:100%; max-width:340px;}
+  .login-card h2{font-family:var(--serif); font-weight:600; margin:0 0 6px; font-size:23px;}
+  .login-card p{color:var(--text-dim); font-size:13px; margin:0 0 20px;}
+  .login-card label{display:block; font-size:12.5px; color:var(--text-dim); margin-bottom:5px;}
+  .login-card input{width:100%; background:#141412; border:1px solid var(--border); color:var(--text); font-family:var(--sans); font-size:14px; padding:10px 12px; border-radius:8px; margin-bottom:14px;}
+  .login-card input:focus{outline:none; border-color:#48473f;}
+  .login-card button{width:100%; background:var(--accent); color:#fff; border:none; padding:11px; border-radius:8px; font-size:14px; font-weight:500; cursor:pointer; font-family:var(--sans);}
+  .login-card button:hover{background:#a83a24;}
+  .login-error{color:#e08a7a; font-size:12.5px; margin-top:10px; min-height:14px;}
+
+  /* ---------- topbar ---------- */
+  .topbar{display:flex; align-items:center; justify-content:space-between; padding:10px 28px; background:#0c0c0c; border-bottom:1px solid var(--border); font-size:13px; color:var(--text-dim); flex-wrap:wrap; gap:8px;}
+  .topbar .crumbs{display:flex; align-items:center; gap:8px;}
+  .topbar .crumbs b{color:var(--text); font-weight:500;}
+  .conn-dot{display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:6px; background:#e0a3a3;}
+  .conn-dot.on{background:#8fd19e;}
+  .topbar .right{display:flex; align-items:center; gap:14px;}
+  .role-badge{font-size:11px; padding:2px 9px; border-radius:999px; background:#232320; color:var(--text-dim); text-transform:uppercase; letter-spacing:.03em;}
+  .role-badge.owner{color:#e0c187;}
+  .role-badge.editor{color:#a9dcb8;}
+  .link-btn{background:none; border:none; color:var(--text-dim); font-size:13px; cursor:pointer; font-family:var(--sans); padding:0;}
+  .link-btn:hover{color:var(--text);}
+
+  /* ---------- hero ---------- */
+  .hero{background:var(--hero-bg); color:var(--hero-text); display:grid; grid-template-columns:1fr 1.4fr 1fr; align-items:center; gap:24px; padding:64px 48px;}
+  .hero .quote{font-size:19px; line-height:1.45; max-width:280px;}
+  .hero .quote .label,.hero .tagline .label{display:block; margin-top:14px; font-size:11px; letter-spacing:.04em; color:#6b6a62; font-family:var(--sans); text-transform:uppercase; font-style:normal;}
+  .hero .wordmark{font-family:var(--serif); font-weight:600; text-align:center; font-size:clamp(44px,6.5vw,78px); line-height:0.92; letter-spacing:-0.01em;}
+  .hero .tagline{text-align:right; font-size:19px; font-style:italic; font-family:var(--serif); max-width:300px; justify-self:end;}
+  @media (max-width:860px){ .hero{grid-template-columns:1fr; text-align:center; padding:40px 24px;} .hero .tagline{justify-self:center; text-align:center;} }
+
+  .content{max-width:none; margin:0 auto; padding:36px 28px 90px;}
+  .toggle-desc{background:none; border:none; color:var(--text-faint); font-size:12px; cursor:pointer; display:flex; align-items:center; gap:5px; padding:0; margin-bottom:10px; font-family:var(--sans);}
+  .toggle-desc:hover{color:var(--text-dim);}
+  .header-row{display:flex; align-items:flex-start; gap:14px; margin-bottom:18px;}
+  .header-row .icon{width:38px; height:38px; border-radius:9px; background:var(--accent-dim); display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:2px;}
+  .header-row h1{font-family:var(--serif); font-weight:600; font-size:32px; margin:0 0 6px;}
+  .header-row p{margin:0; color:var(--text-dim); font-size:14.5px;}
+
+  .storage-note{display:flex; align-items:center; gap:8px; background:#1b1b18; border:1px solid var(--border); border-radius:8px; padding:9px 14px; margin-bottom:18px; font-size:12.5px; color:var(--text-dim);}
+
+  .toolbar{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:20px; flex-wrap:wrap;}
+  .toolbar .left{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+  .pill-btn{display:inline-flex; align-items:center; gap:7px; background:var(--panel); border:1px solid var(--border); color:var(--text); padding:8px 14px; border-radius:999px; font-size:13.5px; cursor:pointer; font-family:var(--sans);}
+  .pill-btn:hover{border-color:#3a3a36;}
+  .search-input{background:var(--panel); border:1px solid var(--border); color:var(--text); padding:8px 14px; border-radius:999px; font-size:13.5px; font-family:var(--sans); width:200px;}
+  .search-input::placeholder{color:var(--text-faint);}
+  .search-input:focus{outline:none; border-color:#48473f;}
+  .new-btn{background:var(--accent); color:#fff; border:none; padding:9px 18px; border-radius:8px; font-size:13.5px; font-weight:500; cursor:pointer; font-family:var(--sans);}
+  .new-btn:hover{background:#a83a24;}
+  .new-btn[disabled], .attach-btn[disabled], .new-doc-btn[disabled], .new-group-tile[disabled]{opacity:.35; cursor:not-allowed;}
+
+  .board{display:flex; align-items:flex-start; gap:16px; overflow-x:auto; padding-bottom:20px;}
+  .group-col{background:transparent; width:250px; flex:0 0 250px;}
+  .group-header{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; gap:6px;}
+  .group-tag-wrap{display:flex; align-items:center; gap:8px; min-width:0;}
+  .tag{display:inline-flex; align-items:center; padding:4px 12px; border-radius:999px; font-size:13px; font-weight:600; cursor:pointer; border:none; font-family:var(--sans); max-width:170px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .tag-rename-input{padding:4px 10px; border-radius:999px; font-size:13px; font-weight:600; font-family:var(--sans); border:1px solid rgba(255,255,255,.35); max-width:150px;}
+  .group-count{color:var(--text-faint); font-size:12.5px; flex-shrink:0;}
+  .group-menu-btn{background:none; border:none; color:var(--text-faint); cursor:pointer; font-size:15px; padding:2px 5px; border-radius:5px; flex-shrink:0;}
+  .group-menu-btn:hover{background:#232320; color:var(--text);}
+
+  .cards{display:flex; flex-direction:column; gap:8px; margin-bottom:8px;}
+  .card{background:var(--card); border:1px solid var(--border); border-radius:9px; padding:11px 12px;}
+  .card:hover{background:var(--card-hover);}
+  .card-name{width:100%; background:transparent; border:1px solid transparent; color:var(--text); font-family:var(--sans); font-weight:500; font-size:13.5px; padding:3px 4px; border-radius:5px; margin-bottom:6px;}
+  .card-name:hover{border-color:var(--border);}
+  .card-name:focus{outline:none; border-color:#48473f; background:#141412;}
+  .card-meta{font-size:11.5px; color:var(--text-faint); margin-bottom:8px;}
+  .card-footer{display:flex; align-items:center; justify-content:space-between; gap:8px;}
+
+  .file-chip{display:flex; align-items:center; gap:6px; background:#141412; border:1px solid var(--border); border-radius:7px; padding:4px 7px; font-size:11.5px; min-width:0; flex:1;}
+  .file-chip a{color:var(--text); text-decoration:none; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1;}
+  .file-chip a:hover{color:var(--accent);}
+  .file-chip .size{color:var(--text-faint); font-size:10px; flex-shrink:0;}
+  .file-chip button{background:transparent; border:none; color:var(--text-faint); cursor:pointer; flex-shrink:0; font-size:13px; line-height:1; padding:0;}
+  .file-chip button:hover{color:var(--accent);}
+  .attach-btn{display:inline-flex; align-items:center; gap:4px; background:transparent; border:1px dashed var(--border); color:var(--text-faint); border-radius:7px; padding:4px 8px; font-size:11.5px; cursor:pointer; font-family:var(--sans);}
+  .attach-btn:hover{color:var(--text); border-color:#48473f;}
+  .icon-btn{background:transparent; border:none; color:var(--text-faint); cursor:pointer; padding:4px; border-radius:5px; display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0;}
+  .icon-btn:hover{background:#28271f; color:var(--text);}
+
+  .new-doc-btn{display:flex; align-items:center; gap:6px; background:none; border:none; color:var(--text-faint); font-size:13px; cursor:pointer; padding:6px 4px; font-family:var(--sans); width:100%; text-align:left; border-radius:6px;}
+  .new-doc-btn:hover{color:var(--text-dim); background:#1c1c19;}
+
+  .new-group-col{width:170px; flex:0 0 170px;}
+  .new-group-tile{display:flex; align-items:center; gap:6px; border:1px dashed var(--border); border-radius:9px; padding:10px 12px; color:var(--text-faint); font-size:13.5px; cursor:pointer; background:transparent; font-family:var(--sans); width:100%;}
+  .new-group-tile:hover{color:var(--text-dim); border-color:#48473f;}
+  .new-group-form{border:1px solid var(--border); border-radius:9px; padding:10px; background:var(--card);}
+  .new-group-form input{width:100%; background:#141412; border:1px solid var(--border); color:var(--text); font-family:var(--sans); font-size:13px; padding:7px 9px; border-radius:6px; margin-bottom:8px;}
+  .new-group-form .actions{display:flex; gap:6px;}
+  .new-group-form button{border:none; border-radius:6px; padding:6px 12px; font-size:12.5px; cursor:pointer; font-family:var(--sans);}
+  .new-group-form .save{background:var(--accent); color:#fff;}
+  .new-group-form .cancel{background:transparent; color:var(--text-faint);}
+
+  .empty-col{color:var(--text-faint); font-size:12px; padding:4px; margin-bottom:8px;}
+  .loading{color:var(--text-faint); font-size:13.5px; padding:20px;}
+
+  .menu-pop{position:absolute; background:#1e1e1c; border:1px solid var(--border); border-radius:9px; padding:6px; box-shadow:0 10px 30px rgba(0,0,0,.5); z-index:40; min-width:150px;}
+  .menu-pop .opt{padding:7px 10px; border-radius:6px; cursor:pointer; font-size:13px; color:var(--text);}
+  .menu-pop .opt:hover{background:#292926;}
+  .menu-pop .opt.danger{color:#e08a7a;}
+  .backdrop{position:fixed; inset:0; z-index:30;}
+
+  .modal-backdrop{position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:50; display:flex; align-items:center; justify-content:center; padding:20px;}
+  .modal{background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:24px; width:100%; max-width:400px;}
+  .modal h3{font-family:var(--serif); margin:0 0 4px; font-size:19px;}
+  .modal p.hint{color:var(--text-dim); font-size:12.5px; margin:0 0 16px;}
+  .editor-row{display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border); font-size:13.5px;}
+  .editor-row:last-of-type{border-bottom:none;}
+  .editor-row .rm{background:none; border:none; color:var(--text-faint); cursor:pointer; font-size:13px;}
+  .editor-row .rm:hover{color:var(--accent);}
+  .add-editor-row{display:flex; gap:8px; margin-top:14px;}
+  .add-editor-row input{flex:1; background:#141412; border:1px solid var(--border); color:var(--text); font-family:var(--sans); font-size:13px; padding:8px 10px; border-radius:7px;}
+  .add-editor-row button{background:var(--accent); color:#fff; border:none; border-radius:7px; padding:0 14px; font-size:13px; cursor:pointer;}
+  .modal-close{width:100%; margin-top:16px; background:none; border:1px solid var(--border); color:var(--text-dim); padding:9px; border-radius:8px; cursor:pointer; font-family:var(--sans); font-size:13px;}
+  .owner-tag{color:var(--text-faint); font-size:11px;}
+
+  .toast{position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#232320; border:1px solid var(--border); color:var(--text); padding:10px 18px; border-radius:8px; font-size:13px; opacity:0; pointer-events:none; transition:opacity .25s ease, transform .25s ease; max-width:80vw; text-align:center;}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(-4px);}
+  .toast.warn{border-color:var(--accent); color:#f1b8ab;}
+</style>
+</head>
+<body>
+
+  <div id="login-screen">
+    <div class="login-card">
+      <h2>Document Hub</h2>
+      <p>Sign in with your Google account to view or edit.</p>
+      <button id="login-btn">Sign in with Google</button>
+      <div class="login-error" id="login-error"></div>
+    </div>
+  </div>
+
+  <div id="denied-screen" class="hidden">
+    <div class="login-card">
+      <h2>Access needed</h2>
+      <p>You're signed in as <b id="denied-email"></b>, but this account hasn't been approved yet. Ask an owner to add your email under "Manage access."</p>
+      <button id="denied-signout-btn">Sign out</button>
+    </div>
+  </div>
+
+  <div id="app-root" class="hidden">
+    <div class="topbar">
+      <div class="crumbs">
+        <span>&#128193; HUMAN RESOURCE</span>
+        <span>/</span>
+        <span>&#128196; <b>Document Hub</b></span>
+      </div>
+      <div class="right">
+        <span id="edited-label"><span class="conn-dot" id="conn-dot"></span>Connecting…</span>
+        <span class="role-badge" id="role-badge"></span>
+        <button class="link-btn hidden" id="manage-editors-btn">Manage access</button>
+        <span id="user-email" style="font-size:12px;"></span>
+        <button class="link-btn" id="signout-btn">Sign out</button>
+      </div>
+    </div>
+
+    <div class="hero">
+      <div class="quote">Never see this as a job, see this as a hobby.<span class="label">Human resource</span></div>
+      <div class="wordmark">human<br>resource</div>
+      <div class="tagline">Healthy asf department<span class="label">Human resource</span></div>
+    </div>
+
+    <div class="content">
+      <div class="header-row">
+        <div class="icon">&#128196;</div>
+        <div style="flex:1">
+          <button class="toggle-desc" id="toggle-desc">&#8505; Hide description</button>
+          <h1>Document Hub</h1>
+          <p id="desc-text">All document templates you need in one place! (Human Resource Department)</p>
+        </div>
+      </div>
+
+      <div class="storage-note" id="storage-note"></div>
+
+      <div class="toolbar">
+        <div class="left">
+          <button class="pill-btn">&#9733; All Docs</button>
+          <input class="search-input" id="search" placeholder="Search docs…" />
+        </div>
+        <button class="new-btn" id="new-doc-btn">+ New</button>
+      </div>
+
+      <div class="board" id="board"><div class="loading">Loading board…</div></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+import {
+  getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
+import {
+  getFirestore, doc, collection, setDoc, updateDoc, deleteDoc,
+  onSnapshot, getDoc, writeBatch, arrayUnion, arrayRemove
+} from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyC9OwbaxTXzOhq0MxemcgPOWS211e0VZN4",
+  authDomain: "doc-hub-a3ed3.firebaseapp.com",
+  projectId: "doc-hub-a3ed3",
+  storageBucket: "doc-hub-a3ed3.firebasestorage.app",
+  messagingSenderId: "786415882669",
+  appId: "1:786415882669:web:1e96dc24a45f9eb6671124",
+  measurementId: "G-W2NSYY6894"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const metaRef = doc(db, 'docHub', 'meta');
+const accessRef = doc(db, 'docHub', 'access');
+const cardsCol = collection(db, 'docHub_cards');
+const googleProvider = new GoogleAuthProvider();
+
+const OWNER_EMAILS = ['aoyamawaltz@gmail.com', 'theeirikun@gmail.com'];
+const MAX_FILE_BYTES = 650 * 1024;
+const DEFAULT_GROUPS = ['Coaching', 'Evaluation', 'Records', 'Miscellaneous'];
+
+const PALETTE = [
+  {bg:'#3a2c3a', fg:'#e2b8de'}, {bg:'#233a2c', fg:'#a9dcb8'}, {bg:'#3a3220', fg:'#e0c187'},
+  {bg:'#22323a', fg:'#a3ccdc'}, {bg:'#3a2323', fg:'#e0a3a3'}, {bg:'#2c2a3a', fg:'#bdb6e6'},
+];
+function hashColor(str){
+  var h = 0;
+  for (var i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
+  return PALETTE[h % PALETTE.length];
+}
+function fmtShort(iso){
+  var d = new Date(iso);
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+}
+function fmtSize(bytes){
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024*1024) return Math.round(bytes/1024) + ' KB';
+  return (bytes/(1024*1024)).toFixed(1) + ' MB';
+}
+function normEmail(e){ return (e || '').trim().toLowerCase(); }
+
+var groups = DEFAULT_GROUPS.slice();
+var cardsById = {};
+var editorEmails = [];
+var viewerEmails = [];
+var metaLoaded = false, cardsLoaded = false, editorsLoaded = false;
+var renamingGroup = null;
+var addingGroup = false;
+var pendingFocusId = null;
+var nameTimers = {};
+var currentEmail = null;
+var isOwner = false;
+var canEdit = false;
+
+var boardEl = document.getElementById('board');
+var searchEl = document.getElementById('search');
+var toastEl = document.getElementById('toast');
+var connDot = document.getElementById('conn-dot');
+var editedLabel = document.getElementById('edited-label');
+var loginScreen = document.getElementById('login-screen');
+var deniedScreen = document.getElementById('denied-screen');
+var appRoot = document.getElementById('app-root');
+var roleBadge = document.getElementById('role-badge');
+var userEmailEl = document.getElementById('user-email');
+var manageBtn = document.getElementById('manage-editors-btn');
+var storageNote = document.getElementById('storage-note');
+
+function toast(msg, warn){
+  toastEl.textContent = msg;
+  toastEl.className = 'toast show' + (warn ? ' warn' : '');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(function(){ toastEl.classList.remove('show'); }, 2200);
+}
+
+/* ---------- auth ---------- */
+document.getElementById('login-btn').onclick = function(){
+  var errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+  signInWithPopup(auth, googleProvider).catch(function(err){
+    errEl.textContent = 'Sign-in failed — please try again.';
+  });
+};
+document.getElementById('signout-btn').onclick = function(){ signOut(auth); };
+document.getElementById('denied-signout-btn').onclick = function(){ signOut(auth); };
+
+onAuthStateChanged(auth, function(user){
+  loginScreen.classList.add('hidden');
+  deniedScreen.classList.add('hidden');
+  appRoot.classList.add('hidden');
+
+  if (!user){
+    loginScreen.classList.remove('hidden');
+    currentEmail = null; isOwner = false; canEdit = false;
+    return;
+  }
+
+  currentEmail = normEmail(user.email);
+  isOwner = OWNER_EMAILS.map(normEmail).indexOf(currentEmail) !== -1;
+
+  checkAccess().then(function(allowed){
+    if (!allowed){
+      document.getElementById('denied-email').textContent = user.email;
+      deniedScreen.classList.remove('hidden');
+      return;
+    }
+    appRoot.classList.remove('hidden');
+    userEmailEl.textContent = user.email;
+    manageBtn.classList.toggle('hidden', !isOwner);
+    startData();
+  });
+});
+
+// Owners always pass. Everyone else must be on the editors or viewers list
+// in /docHub/access — reading that doc itself fails with permission-denied
+// for anyone not on it, which is how we detect "not approved yet."
+async function checkAccess(){
+  if (isOwner) return true;
+  try {
+    var snap = await getDoc(accessRef);
+    var data = snap.exists() ? snap.data() : {editors: [], viewers: []};
+    editorEmails = (data.editors || []).map(normEmail);
+    viewerEmails = (data.viewers || []).map(normEmail);
+    editorsLoaded = true;
+    return editorEmails.indexOf(currentEmail) !== -1 || viewerEmails.indexOf(currentEmail) !== -1;
+  } catch (e){
+    return false;
+  }
+}
+
+/* ---------- data bootstrap ---------- */
+function migrateFromLocalStorage(){
+  try {
+    var raw = localStorage.getItem('hr-doc-hub-v3');
+    if (raw){
+      var parsed = JSON.parse(raw);
+      return {groups: parsed.groups && parsed.groups.length ? parsed.groups : DEFAULT_GROUPS.slice(), docs: parsed.docs || []};
+    }
+  } catch(e){}
+  return {groups: DEFAULT_GROUPS.slice(), docs: []};
+}
+
+async function seedIfEmpty(){
+  var metaSnap = await getDoc(metaRef);
+  if (metaSnap.exists()) return;
+  var seed = migrateFromLocalStorage();
+  var batch = writeBatch(db);
+  batch.set(metaRef, {groups: seed.groups});
+  var accessSnap = await getDoc(accessRef);
+  if (!accessSnap.exists()) batch.set(accessRef, {editors: [], viewers: []});
+  seed.docs.forEach(function(d){
+    var id = d.id || crypto.randomUUID();
+    batch.set(doc(db, 'docHub_cards', id), {
+      name: d.name, group: d.group, createdBy: d.createdBy, createdAt: d.createdAt,
+      editedBy: d.editedBy, updatedAt: d.updatedAt, file: d.file || null
+    });
+  });
+  await batch.commit();
+}
+
+var listenersStarted = false;
+function startData(){
+  if (listenersStarted) return;
+  listenersStarted = true;
+
+  (isOwner ? seedIfEmpty() : Promise.resolve()).catch(function(e){ console.error(e); }).then(function(){
+    onSnapshot(metaRef, function(snap){
+      groups = snap.exists() && snap.data().groups && snap.data().groups.length ? snap.data().groups : DEFAULT_GROUPS.slice();
+      metaLoaded = true;
+      connDot.classList.add('on');
+      editedLabel.innerHTML = '<span class="conn-dot on"></span>Live';
+      safeRender();
+    }, onFail);
+
+    onSnapshot(cardsCol, function(snap){
+      var next = {};
+      snap.forEach(function(d){ next[d.id] = d.data(); });
+      cardsById = next;
+      cardsLoaded = true;
+      safeRender();
+    }, onFail);
+
+    onSnapshot(accessRef, function(snap){
+      var data = snap.exists() ? snap.data() : {editors: [], viewers: []};
+      editorEmails = (data.editors || []).map(normEmail);
+      viewerEmails = (data.viewers || []).map(normEmail);
+      editorsLoaded = true;
+      canEdit = isOwner || editorEmails.indexOf(currentEmail) !== -1;
+      updateRoleUi();
+      safeRender();
+      if (manageOpen) renderManageModal();
+    }, onFail);
+  });
+}
+function onFail(err){
+  console.error(err);
+  editedLabel.innerHTML = '<span class="conn-dot"></span>Offline';
+  toast('Could not connect to the shared database', true);
+}
+
+function updateRoleUi(){
+  var role = isOwner ? 'Owner' : (canEdit ? 'Editor' : 'Viewer');
+  roleBadge.textContent = role;
+  roleBadge.className = 'role-badge ' + role.toLowerCase();
+  storageNote.textContent = canEdit
+    ? 'This board is shared live with your signed-in team. Attached files are capped around 650 KB (database size limit).'
+    : 'You have view-only access. Ask an owner to make you an editor if you need to add or change docs.';
+  document.getElementById('new-doc-btn').disabled = !canEdit;
+}
+
+/* ---------- manage editors modal ---------- */
+var manageOpen = false;
+manageBtn.onclick = function(){ manageOpen = true; renderManageModal(); };
+
+function renderManageModal(){
+  var existing = document.getElementById('manage-modal-backdrop');
+  if (existing) existing.remove();
+  if (!manageOpen) return;
+
+  var backdrop = document.createElement('div');
+  backdrop.id = 'manage-modal-backdrop';
+  backdrop.className = 'modal-backdrop';
+  backdrop.onclick = function(e){ if (e.target === backdrop){ manageOpen = false; backdrop.remove(); } };
+
+  var modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.innerHTML = '<h3>Manage access</h3><p class="hint">Only people listed here (or owners) can sign in with Google and see the board at all. Editors can also add/change docs.</p>';
+
+  OWNER_EMAILS.forEach(function(e){
+    var row = document.createElement('div'); row.className = 'editor-row';
+    row.innerHTML = '<span>' + e + '</span><span class="owner-tag">Owner</span>';
+    modal.appendChild(row);
+  });
+  editorEmails.forEach(function(e){
+    var row = document.createElement('div'); row.className = 'editor-row';
+    var span = document.createElement('span'); span.textContent = e;
+    var right = document.createElement('span'); right.style.cssText = 'display:flex;align-items:center;gap:8px;';
+    var tag = document.createElement('span'); tag.className = 'owner-tag'; tag.textContent = 'Editor';
+    var rm = document.createElement('button'); rm.className = 'rm'; rm.textContent = 'Remove';
+    rm.onclick = function(){ updateDoc(accessRef, {editors: arrayRemove(e)}).catch(function(){ toast('Could not update access', true); }); };
+    right.appendChild(tag); right.appendChild(rm);
+    row.appendChild(span); row.appendChild(right);
+    modal.appendChild(row);
+  });
+  viewerEmails.forEach(function(e){
+    var row = document.createElement('div'); row.className = 'editor-row';
+    var span = document.createElement('span'); span.textContent = e;
+    var right = document.createElement('span'); right.style.cssText = 'display:flex;align-items:center;gap:8px;';
+    var promote = document.createElement('button'); promote.className = 'rm'; promote.textContent = 'Make editor';
+    promote.onclick = function(){
+      updateDoc(accessRef, {viewers: arrayRemove(e), editors: arrayUnion(e)}).catch(function(){ toast('Could not update access', true); });
+    };
+    var rm = document.createElement('button'); rm.className = 'rm'; rm.textContent = 'Remove';
+    rm.onclick = function(){ updateDoc(accessRef, {viewers: arrayRemove(e)}).catch(function(){ toast('Could not update access', true); }); };
+    right.appendChild(promote); right.appendChild(rm);
+    row.appendChild(span); row.appendChild(right);
+    modal.appendChild(row);
+  });
+
+  var addRow = document.createElement('div'); addRow.className = 'add-editor-row';
+  var input = document.createElement('input'); input.type = 'email'; input.placeholder = 'person@gmail.com';
+  var roleSelect = document.createElement('select');
+  roleSelect.style.cssText = 'background:#141412;border:1px solid var(--border);color:var(--text);border-radius:7px;font-size:12.5px;padding:0 6px;';
+  roleSelect.innerHTML = '<option value="viewer">Viewer</option><option value="editor">Editor</option>';
+  var addBtn = document.createElement('button'); addBtn.textContent = 'Add';
+  function commitAdd(){
+    var v = normEmail(input.value);
+    if (!v) return;
+    if (OWNER_EMAILS.map(normEmail).indexOf(v) !== -1 || editorEmails.indexOf(v) !== -1 || viewerEmails.indexOf(v) !== -1){
+      toast('Already has access', true); return;
+    }
+    var field = roleSelect.value === 'editor' ? 'editors' : 'viewers';
+    var patch = {}; patch[field] = arrayUnion(v);
+    setDoc(accessRef, patch, {merge:true}).then(function(){ input.value = ''; }).catch(function(){ toast('Could not add access', true); });
+  }
+  addBtn.onclick = commitAdd;
+  input.addEventListener('keydown', function(e){ if (e.key === 'Enter') commitAdd(); });
+  addRow.appendChild(input); addRow.appendChild(roleSelect); addRow.appendChild(addBtn);
+  modal.appendChild(addRow);
+
+  var closeBtn = document.createElement('button'); closeBtn.className = 'modal-close'; closeBtn.textContent = 'Close';
+  closeBtn.onclick = function(){ manageOpen = false; backdrop.remove(); };
+  modal.appendChild(closeBtn);
+
+  backdrop.appendChild(modal);
+  document.body.appendChild(backdrop);
+}
+
+/* ---------- board logic ---------- */
+function isTypingCardName(){
+  var el = document.activeElement;
+  return el && el.classList && el.classList.contains('card-name');
+}
+function safeRender(){
+  if (isTypingCardName()) return;
+  render();
+}
+
+async function createCard(groupName){
+  if (!canEdit) return;
+  var id = crypto.randomUUID();
+  var now = new Date().toISOString();
+  pendingFocusId = id;
+  await setDoc(doc(db, 'docHub_cards', id), {
+    name: 'Untitled doc', group: groupName, createdBy: currentEmail, createdAt: now,
+    editedBy: currentEmail, updatedAt: now, file: null
+  }).catch(function(){ toast('Could not add doc', true); });
+}
+async function removeCard(id){
+  if (!canEdit) return;
+  await deleteDoc(doc(db, 'docHub_cards', id)).catch(function(){ toast('Could not delete doc', true); });
+  toast('Doc deleted');
+}
+async function patchCard(id, patch){
+  if (!canEdit) return;
+  try { await updateDoc(doc(db, 'docHub_cards', id), patch); }
+  catch(e){ toast('Could not save — check your connection', true); }
+}
+function scheduleNameUpdate(id, value){
+  clearTimeout(nameTimers[id]);
+  nameTimers[id] = setTimeout(function(){
+    patchCard(id, {name: value, editedBy: currentEmail, updatedAt: new Date().toISOString()});
+  }, 500);
+}
+function flushNameUpdate(id, value){
+  clearTimeout(nameTimers[id]);
+  patchCard(id, {name: value, editedBy: currentEmail, updatedAt: new Date().toISOString()});
+}
+
+async function handleFileAttach(id, fileList){
+  if (!canEdit) return;
+  var file = fileList && fileList[0];
+  if (!file) return;
+  if (file.size > MAX_FILE_BYTES){ toast('That file is too big for the database (max ~650 KB)', true); return; }
+  var reader = new FileReader();
+  reader.onload = async function(){
+    await patchCard(id, {
+      file: {name:file.name, type:file.type || 'application/octet-stream', size:file.size, dataUrl:reader.result},
+      editedBy: currentEmail, updatedAt: new Date().toISOString()
+    });
+    toast('File attached');
+  };
+  reader.onerror = function(){ toast('Could not read that file', true); };
+  reader.readAsDataURL(file);
+}
+
+function closePops(){ document.querySelectorAll('.menu-pop, .backdrop').forEach(function(el){ el.remove(); }); }
+
+async function addGroup(name){
+  if (!canEdit) return;
+  if (groups.some(function(g){ return g.toLowerCase() === name.toLowerCase(); })){
+    toast('That function already exists', true); return;
+  }
+  var next = groups.concat([name]);
+  await setDoc(metaRef, {groups: next}).catch(function(){ toast('Could not add function', true); });
+}
+async function renameGroup(oldName, newName){
+  if (!canEdit) return;
+  newName = newName.trim();
+  if (!newName || newName === oldName) return;
+  if (groups.some(function(g){ return g.toLowerCase() === newName.toLowerCase() && g !== oldName; })){
+    toast('A function with that name already exists', true); return;
+  }
+  var next = groups.map(function(g){ return g === oldName ? newName : g; });
+  var batch = writeBatch(db);
+  Object.keys(cardsById).forEach(function(id){
+    if (cardsById[id].group === oldName) batch.update(doc(db,'docHub_cards', id), {group: newName});
+  });
+  batch.set(metaRef, {groups: next});
+  await batch.commit().catch(function(){ toast('Could not rename function', true); });
+}
+async function deleteGroup(name){
+  if (!canEdit) return;
+  var fallback = name === 'Miscellaneous' ? 'Ungrouped' : 'Miscellaneous';
+  var next = groups.filter(function(g){ return g !== name; });
+  if (next.indexOf(fallback) === -1 && Object.keys(cardsById).some(function(id){ return cardsById[id].group === name; })){
+    next.push(fallback);
+  }
+  var batch = writeBatch(db);
+  Object.keys(cardsById).forEach(function(id){
+    if (cardsById[id].group === name) batch.update(doc(db,'docHub_cards', id), {group: fallback});
+  });
+  batch.set(metaRef, {groups: next});
+  await batch.commit().catch(function(){ toast('Could not delete function', true); });
+}
+
+function openGroupMenu(anchorEl, groupName){
+  closePops();
+  var backdrop = document.createElement('div'); backdrop.className = 'backdrop'; backdrop.onclick = closePops;
+  document.body.appendChild(backdrop);
+  var rect = anchorEl.getBoundingClientRect();
+  var pop = document.createElement('div'); pop.className = 'menu-pop';
+  pop.style.top = (window.scrollY + rect.bottom + 6) + 'px';
+  pop.style.left = (window.scrollX + rect.left) + 'px';
+  var renameOpt = document.createElement('div'); renameOpt.className = 'opt'; renameOpt.textContent = 'Rename function';
+  renameOpt.onclick = function(){ closePops(); renamingGroup = groupName; render(); };
+  var deleteOpt = document.createElement('div'); deleteOpt.className = 'opt danger'; deleteOpt.textContent = 'Delete function';
+  deleteOpt.onclick = function(){ closePops(); deleteGroup(groupName); };
+  pop.appendChild(renameOpt); pop.appendChild(deleteOpt);
+  document.body.appendChild(pop);
+}
+
+function render(){
+  if (!metaLoaded || !cardsLoaded || !editorsLoaded) return;
+  var q = searchEl.value.trim().toLowerCase();
+  boardEl.innerHTML = '';
+
+  groups.forEach(function(groupName){
+    var c = hashColor(groupName);
+    var col = document.createElement('div');
+    col.className = 'group-col';
+
+    var header = document.createElement('div');
+    header.className = 'group-header';
+    var tagWrap = document.createElement('div');
+    tagWrap.className = 'group-tag-wrap';
+
+    var groupCardIds = Object.keys(cardsById).filter(function(id){ return cardsById[id].group === groupName; });
+
+    if (renamingGroup === groupName && canEdit){
+      var renameInput = document.createElement('input');
+      renameInput.className = 'tag-rename-input';
+      renameInput.style.background = c.bg; renameInput.style.color = c.fg;
+      renameInput.value = groupName;
+      renameInput.addEventListener('keydown', function(e){
+        if (e.key === 'Enter'){ var v = renameInput.value; renamingGroup = null; renameGroup(groupName, v); }
+        if (e.key === 'Escape'){ renamingGroup = null; render(); }
+      });
+      renameInput.addEventListener('blur', function(){ var v = renameInput.value; renamingGroup = null; renameGroup(groupName, v); });
+      tagWrap.appendChild(renameInput);
+      setTimeout(function(){ renameInput.focus(); renameInput.select(); }, 0);
+    } else {
+      var tag = document.createElement('button');
+      tag.type = 'button'; tag.className = 'tag';
+      tag.style.background = c.bg; tag.style.color = c.fg;
+      tag.textContent = groupName;
+      if (canEdit){ tag.title = 'Click to rename'; tag.onclick = function(){ renamingGroup = groupName; render(); }; }
+      else { tag.style.cursor = 'default'; }
+      var countEl = document.createElement('span');
+      countEl.className = 'group-count'; countEl.textContent = groupCardIds.length;
+      tagWrap.appendChild(tag); tagWrap.appendChild(countEl);
+    }
+    header.appendChild(tagWrap);
+
+    if (canEdit){
+      var menuBtn = document.createElement('button');
+      menuBtn.type = 'button'; menuBtn.className = 'group-menu-btn'; menuBtn.textContent = '\u22EF';
+      menuBtn.onclick = function(){ openGroupMenu(menuBtn, groupName); };
+      header.appendChild(menuBtn);
+    }
+    col.appendChild(header);
+
+    var cardsWrap = document.createElement('div');
+    cardsWrap.className = 'cards';
+    var visibleIds = groupCardIds.filter(function(id){ return !q || cardsById[id].name.toLowerCase().indexOf(q) !== -1; });
+
+    if (groupCardIds.length && !visibleIds.length){
+      var noMatch = document.createElement('div'); noMatch.className = 'empty-col'; noMatch.textContent = 'No matches';
+      cardsWrap.appendChild(noMatch);
+    }
+
+    visibleIds.forEach(function(id){
+      var cardData = cardsById[id];
+      var card = document.createElement('div');
+      card.className = 'card';
+
+      var nameInput = document.createElement('input');
+      nameInput.className = 'card-name'; nameInput.type = 'text'; nameInput.spellcheck = false;
+      nameInput.value = cardData.name;
+      nameInput.readOnly = !canEdit;
+      nameInput.addEventListener('input', function(){ if (canEdit) scheduleNameUpdate(id, nameInput.value); });
+      nameInput.addEventListener('blur', function(){
+        if (!canEdit) return;
+        var v = nameInput.value.trim() || 'Untitled doc';
+        nameInput.value = v;
+        flushNameUpdate(id, v);
+        safeRender();
+      });
+      card.appendChild(nameInput);
+      if (pendingFocusId === id){ pendingFocusId = null; setTimeout(function(){ nameInput.focus(); nameInput.select(); }, 0); }
+
+      var meta = document.createElement('div');
+      meta.className = 'card-meta';
+      meta.textContent = cardData.createdBy + ' \u00B7 ' + fmtShort(cardData.createdAt);
+      card.appendChild(meta);
+
+      var footer = document.createElement('div');
+      footer.className = 'card-footer';
+
+      if (cardData.file){
+        var chip = document.createElement('div'); chip.className = 'file-chip';
+        var link = document.createElement('a');
+        link.href = cardData.file.dataUrl; link.download = cardData.file.name; link.textContent = cardData.file.name;
+        link.title = cardData.file.name + ' (' + fmtSize(cardData.file.size) + ')';
+        var sizeSpan = document.createElement('span'); sizeSpan.className = 'size'; sizeSpan.textContent = fmtSize(cardData.file.size);
+        chip.appendChild(link); chip.appendChild(sizeSpan);
+        if (canEdit){
+          var removeBtn = document.createElement('button'); removeBtn.type = 'button'; removeBtn.title = 'Remove file'; removeBtn.textContent = '\u00D7';
+          removeBtn.onclick = function(){ patchCard(id, {file: null, editedBy: currentEmail, updatedAt: new Date().toISOString()}); };
+          chip.appendChild(removeBtn);
+        }
+        footer.appendChild(chip);
+      } else if (canEdit){
+        var attachBtn = document.createElement('button');
+        attachBtn.type = 'button'; attachBtn.className = 'attach-btn'; attachBtn.innerHTML = '+ Attach';
+        var fileInput = document.createElement('input'); fileInput.type = 'file'; fileInput.style.display = 'none';
+        fileInput.addEventListener('change', function(){ handleFileAttach(id, fileInput.files); });
+        attachBtn.onclick = function(){ fileInput.click(); };
+        footer.appendChild(attachBtn); footer.appendChild(fileInput);
+      } else {
+        var noFile = document.createElement('span'); noFile.style.cssText = 'font-size:11.5px;color:var(--text-faint);'; noFile.textContent = 'No file';
+        footer.appendChild(noFile);
+      }
+
+      if (canEdit){
+        var delBtn = document.createElement('button');
+        delBtn.type = 'button'; delBtn.className = 'icon-btn'; delBtn.title = 'Delete doc'; delBtn.textContent = '\u2715';
+        delBtn.onclick = function(){ removeCard(id); };
+        footer.appendChild(delBtn);
+      }
+
+      card.appendChild(footer);
+      cardsWrap.appendChild(card);
+    });
+
+    col.appendChild(cardsWrap);
+
+    if (canEdit){
+      var newDocBtn = document.createElement('button');
+      newDocBtn.type = 'button'; newDocBtn.className = 'new-doc-btn'; newDocBtn.textContent = '+ New doc';
+      newDocBtn.onclick = function(){ createCard(groupName); };
+      col.appendChild(newDocBtn);
+    }
+
+    boardEl.appendChild(col);
+  });
+
+  if (canEdit){
+    var newGroupCol = document.createElement('div');
+    newGroupCol.className = 'new-group-col';
+    if (addingGroup){
+      var form = document.createElement('div'); form.className = 'new-group-form';
+      var input = document.createElement('input'); input.placeholder = 'Function name…';
+      form.appendChild(input);
+      var actions = document.createElement('div'); actions.className = 'actions';
+      var saveBtn = document.createElement('button'); saveBtn.className = 'save'; saveBtn.textContent = 'Add';
+      var cancelBtn = document.createElement('button'); cancelBtn.className = 'cancel'; cancelBtn.textContent = 'Cancel';
+      function commit(){
+        var v = input.value.trim();
+        addingGroup = false;
+        if (v) addGroup(v); else render();
+      }
+      saveBtn.onclick = commit;
+      cancelBtn.onclick = function(){ addingGroup = false; render(); };
+      input.addEventListener('keydown', function(e){ if (e.key === 'Enter') commit(); if (e.key === 'Escape'){ addingGroup = false; render(); } });
+      actions.appendChild(saveBtn); actions.appendChild(cancelBtn);
+      form.appendChild(actions);
+      newGroupCol.appendChild(form);
+      setTimeout(function(){ input.focus(); }, 0);
+    } else {
+      var tile = document.createElement('button');
+      tile.type = 'button'; tile.className = 'new-group-tile'; tile.textContent = '+ New group';
+      tile.onclick = function(){ addingGroup = true; render(); };
+      newGroupCol.appendChild(tile);
+    }
+    boardEl.appendChild(newGroupCol);
+  }
+}
+
+document.getElementById('new-doc-btn').onclick = function(){ if (canEdit) createCard(groups[0] || 'Miscellaneous'); };
+document.getElementById('toggle-desc').onclick = function(){
+  var p = document.getElementById('desc-text');
+  var btn = document.getElementById('toggle-desc');
+  var hidden = p.classList.toggle('hidden');
+  btn.innerHTML = '&#8505; ' + (hidden ? 'Show description' : 'Hide description');
+};
+searchEl.addEventListener('input', safeRender);
+</script>
+</body>
+</html>
